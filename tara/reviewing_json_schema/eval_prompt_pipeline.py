@@ -1,6 +1,7 @@
 from tara.lib.pipeline import Pipeline
 # include actions
 from tara.reviewing_json_schema.eval_PII_actions import EvalPIIAction
+from tara.reviewing_json_schema.eval_selfContained_Action import EvalSelfContainedAction
 import sys
 import os
 
@@ -19,24 +20,24 @@ class EvalResponsePieline(Pipeline):
         self.read_csv()
         self.filter_row()
 
-        #
+        #First action
         action = EvalPIIAction()
         action.set_model(self.model)
 
-        self.execute_action(action.eval_PII,'ER_EVAL_PROMPT')
+        self.execute_action(action.eval_PII,'MR_EVAL_PROMPT_PII')
         
-        self.execute_regex_action(r"<PROMPT_OK>(.*?)</PROMPT_OK>",'ER_EVAL_PROMPT','EVAL_PII',action)
-        self.execute_regex_action(r"<EXPLANATION>(.*?)</EXPLANATION>",'ER_EVAL_PROMPT','JUSTIFICATION_PII',action)
+        self.execute_regex_action(r"<PROMPT_OK>(.*?)</PROMPT_OK>",'MR_EVAL_PROMPT_PII','EVAL_PII',action)
+        self.execute_regex_action(r"<EXPLANATION>(.*?)</EXPLANATION>",'MR_EVAL_PROMPT_PII','JUSTIFICATION_PII',action)
 
-        #action = EvalSelfContainedAction()
-        #action.set_model(self.model)
-#
-        #self.execute_action(action.eval_self_containded,'ER_EVAL_RESPONSE')
-        #
-        #self.execute_regex_action(r"<RESPONSE_OK>(.*?)</RESPONSE_OK>",'ER_EVAL_RESPONSE','EVAL_PII',action)
-        #self.execute_regex_action(r"<EXPLANATION>(.*?)</EXPLANATION>",'ER_EVAL_RESPONSE','JUSTIFICATION_PII',action)
-
+        #Second action
+        action = EvalSelfContainedAction()
+        action.set_model(self.model)
         
+        self.execute_action(action.eval_self_containded,'MR_EVAL_PROMPT_SELF_CONTAINED')
+        
+        self.execute_regex_action(r"<PROMPT_OK>(.*?)</PROMPT_OK>",'MR_EVAL_PROMPT_SELF_CONTAINED','EVAL_SELFCONTAINED',action)
+        self.execute_regex_action(r"<EXPLANATION>(.*?)</EXPLANATION>",'MR_EVAL_PROMPT_SELF_CONTAINED','JUSTIFICATION_SELFCONTAINED',action)
+       
 
         # Save the results to a new csv
         self.save_csv()
