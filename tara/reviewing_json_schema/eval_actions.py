@@ -6,16 +6,19 @@ class EvalAction(Action):
 
     def eval_match_prompt_json(self,row) -> str:
         final_prompt=f"""
-Analyze the given <PROMPT> and extract any text that references properties defined in <JSON_SCHEMA>. 
-Generate a new JSON where each key corresponds to a property in <JSON_SCHEMA>, and the value is the relevant text from <PROMPT> that alludes to that property. 
-If a property is not mentioned in <PROMPT>, its value should be null. Ensure all properties from <JSON_SCHEMA> are included in the output.
+Analyze the provided <PROMPT> and identify any text that references properties defined in <JSON_SCHEMA>.
+
+Generate a JSON output where each key corresponds to a property from <JSON_SCHEMA>, and its value is the relevant text from <PROMPT> that directly or indirectly alludes to that property. 
+The reference may be explicit, implicit, or inferred. The key criterion is whether the prompt contains any indication—direct or indirect—of the property's relevance.
+
+If a property is not mentioned in <PROMPT>, assign its value as null. Ensure that all properties from <JSON_SCHEMA> are included in the output JSON.
 
 <PROMPT>
 {row['prompt']}
 </PROMPT>
 
 <JSON_SCHEMA>
-{row['schema']}
+{row['modified_schema']}
 </JSON_SCHEMA>
 
 Your output must follow this structure:
