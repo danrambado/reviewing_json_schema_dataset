@@ -108,15 +108,29 @@ Your output must follow this structure:
         
     def call_prompt_sub_schema(self,row,property_name,schema_property ):
         final_prompt=f"""
-Analyze the provided <PROMPT> and identify any text that references properties defined in <JSON_SUB_SCHEMA>.
+Analyze the provided subschema and compare it against the PROMPT to determine whether the PROMPT contains references to all relevant aspects of the subschema.
 The <JSON_SUB_SCHEMA> represents the subschema of the property {property_name}, which is a key property in the top-level schema <JSON_SCHEMA>.
 
-Generate a JSON output where each key corresponds to a property from <JSON_SUB_SCHEMA>, and its value is the relevant text from <PROMPT> that directly or indirectly alludes to that property. 
-The reference may be explicit, implicit, or inferred. The key criterion is whether the prompt contains any indication—direct or indirect—of the property's relevance.
 
-If a property is not mentioned in <PROMPT>, assign its value as null. Ensure that all properties from <JSON_SUB_SCHEMA> are included in the output JSON.
-Evaluate if the prompt include all the information to complete the properties in the <JSON_SUB_SCHEMA>.
+A reference can be:
+	•	Explicit: Directly mentioning a property or value from the subschema.
+	•	Implicit: Indirectly alluding to a property through synonyms, descriptions, or contextual information.
+	•	Inferred: Logically derived from the content of the PROMPT even if not stated verbatim.
 
+Evaluation Criteria:
+	1.	Property Matching: Does the PROMPT reference all required properties in the subschema?
+	2.	Value Alignment: If the subschema includes constraints (e.g., types, allowed values, formats), does the PROMPT provide sufficient information to satisfy those constraints?
+	3.	Completeness: Does the PROMPT convey enough detail to infer the full meaning of the subschema without missing key aspects?
+
+Expected Output:
+
+Generate a Boolean result (true or false):
+	•	true if all elements of the subschema are present, referenced, or inferable from the PROMPT.
+	•	false if any element of the subschema is missing or lacks sufficient reference in the PROMPT.
+
+Additionally, provide a justification explaining which properties are fully referenced and which are missing or ambiguous.
+
+Inputs:
 <PROMPT>
 {row['prompt']}
 </PROMPT>
@@ -130,8 +144,12 @@ Evaluate if the prompt include all the information to complete the properties in
 </JSON_SUB_SCHEMA>
 
 Your output must follow this structure:
-<JSON>JSON</JSON>
-<PROMPT_OK>True/False</PROMPT_OK>
-<EXPLANATION>YOUR EXPLANATION HERE</EXPLANATION>   
+<ANALYSIS>
+{
+  "fully_referenced": true/false,
+  "missing_properties": ["prop1", "prop2", ...],  
+  "justification": "Explanation of why certain properties are missing or ambiguous."
+}
+</ANALYSIS>
 """
         return self.prompt(final_prompt)
