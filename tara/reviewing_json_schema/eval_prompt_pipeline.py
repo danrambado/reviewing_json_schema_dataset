@@ -1,11 +1,10 @@
 from tara.lib.pipeline import Pipeline
 # include actions
-from tara.reviewing_json_schema.eval_PII_actions import EvalPIIAction
-from tara.reviewing_json_schema.eval_selfContained_Action import EvalSelfContainedAction
+from tara.reviewing_json_schema.eval_actions import EvalAction
 import sys
 import os
 
-class EvalResponsePieline(Pipeline):
+class EvalPromptPieline(Pipeline):
     def __init__(self):
         super().__init__()
     
@@ -21,23 +20,12 @@ class EvalResponsePieline(Pipeline):
         self.filter_row()
 
         #First action
-        action = EvalPIIAction()
+        action = EvalAction()
         action.set_model(self.model)
 
-        self.execute_action(action.eval_PII,'MR_EVAL_PROMPT_PII')
-        
-        self.execute_regex_action(r"<PROMPT_OK>(.*?)</PROMPT_OK>",'MR_EVAL_PROMPT_PII','EVAL_PII',action)
-        self.execute_regex_action(r"<EXPLANATION>(.*?)</EXPLANATION>",'MR_EVAL_PROMPT_PII','JUSTIFICATION_PII',action)
+        self.execute_action(action.eval_match_prompt_json,'MR_EVAL_PROMPT_MATCH_JSON')
 
-        #Second action
-        action = EvalSelfContainedAction()
-        action.set_model(self.model)
-        
-        self.execute_action(action.eval_self_containded,'MR_EVAL_PROMPT_SELF_CONTAINED')
-        
-        self.execute_regex_action(r"<PROMPT_OK>(.*?)</PROMPT_OK>",'MR_EVAL_PROMPT_SELF_CONTAINED','EVAL_SELFCONTAINED',action)
-        self.execute_regex_action(r"<EXPLANATION>(.*?)</EXPLANATION>",'MR_EVAL_PROMPT_SELF_CONTAINED','JUSTIFICATION_SELFCONTAINED',action)
-       
+        self.execute_regex_action(r"<JSON>(.*?)</JSON>",'MR_EVAL_PROMPT_MATCH_JSON','EVAL_PROMPT_MATCH_JSON',action)       
 
         # Save the results to a new csv
         self.save_csv()
@@ -49,7 +37,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Access the parameters
-    pipeline= EvalResponsePieline()
+    pipeline= EvalPromptPieline()
     pipeline.csv_file_input = os.path.join(sys.argv[1], 'seed.csv')
     pipeline.csv_file_output = os.path.join(sys.argv[1], 'eval.csv')
     pipeline.model = sys.argv[2]
