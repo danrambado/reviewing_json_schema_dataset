@@ -11,8 +11,7 @@ class EvalPIIAction(Action):
         final_prompt=f"""
 <REQUEST>
 Check for personally identifiable information (PII) in the PROMPT.
-Fake data are allowed.
-Valid examples of false data are contacts such as Anna Fields (anna.fields@email.fake, +15551234567) and Edward Money (edward.money@email.fake).
+Fake data are allowed. Valid examples of false data are contacts such as Anna Fields (anna.fields@email.fake, +15551234567) and Edward Money (edward.money@email.fake).
 </REQUEST>
 
 <PROMPT>

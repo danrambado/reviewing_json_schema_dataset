@@ -90,25 +90,22 @@ Your output must follow this structure:
         
     def call_prompt_sub_schema(self,row,property_name,schema_property ):
         final_prompt=f"""
-Analyze the provided subschema and compare it against the PROMPT to determine whether the PROMPT contains references to all relevant aspects of the subschema.
-The <JSON_SUB_SCHEMA> represents the subschema of the property {property_name}, which is a key property in the top-level schema <JSON_SCHEMA>.
+Verify if the PROMPT contains enough information to construct a valid JSON based on the provided <JSON_SCHEMA>.
+For instance, if the <JSON_SCHEMA> includes a property called “event_date”, the PROMPT should reference “event_date” in some form.
+Even if the schema requires a specific format (e.g., YYYY-MM-DD), mentioning a date like “Feb 14, 2028” is acceptable since the schema will enforce the format during JSON generation.
 
-
-A reference can be:
-	•	Explicit: Directly mentioning a property or value from the subschema.
-	•	Implicit: Indirectly alluding to a property through synonyms, descriptions, or contextual information.
-	•	Inferred: Logically derived from the content of the PROMPT even if not stated verbatim.
-
+Reference Types:
+	•	Explicit: Directly mentioning a property or value from the <JSON_SCHEMA>.
+	•	Implicit: Alluding to a property through synonyms, descriptions, or context.
+	•	Inferred: Logically deriving a property from the PROMPT even if not stated verbatim.
 Evaluation Criteria:
-	1.	Property Matching: Does the PROMPT reference all required properties in the subschema?
-	2.	Value Alignment: If the subschema includes constraints (e.g., types, allowed values, formats), does the PROMPT provide sufficient information to satisfy those constraints?
-	3.	Completeness: Does the PROMPT convey enough detail to infer the full meaning of the subschema without missing key aspects?
-
-Expected Output:
+	1.	Property Matching: Does the PROMPT reference all required properties in the <JSON_SCHEMA> (e.g., “event_date”)?
+	2.	Value Alignment: If the <JSON_SCHEMA> includes constraints like data types, allowed values, or formats, does the PROMPT provide enough detail to satisfy these constraints? The PROMPT doesn’t need to follow the exact type described in the schema since the schema will be provided along with the verified prompt.
+    3.  Completeness and Informational Depth: Does the PROMPT include sufficient detail to capture the full meaning and overall intent of the <JSON_SCHEMA> without missing any key aspects?
 
 Generate a Boolean result (true or false):
-	•	true if all elements of the subschema are present, referenced, or inferable from the PROMPT.
-	•	false if any element of the subschema is missing or lacks sufficient reference in the PROMPT.
+	•	true if all elements of the <JSON_SCHEMA> are present, referenced, or inferable from the PROMPT.
+	•	false if any element of the <JSON_SCHEMA> is missing or lacks sufficient reference in the PROMPT.
 
 Additionally, provide a justification explaining which properties are fully referenced and which are missing or ambiguous.
 
@@ -118,12 +115,8 @@ Inputs:
 </PROMPT>
 
 <JSON_SCHEMA>
-{row['modified_schema']}
-</JSON_SCHEMA>
-
-<JSON_SUB_SCHEMA>
 {schema_property}
-</JSON_SUB_SCHEMA>
+</JSON_SCHEMA>
 
 Your output must follow this structure:
 <ANALYSIS>{{

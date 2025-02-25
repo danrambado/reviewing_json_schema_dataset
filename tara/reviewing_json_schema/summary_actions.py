@@ -7,9 +7,9 @@ class SummaryAction(Action):
     def summary(self,row) -> str:
         message=[]
         if str(row['EVAL_SELF_CONTAINED']).lower()=='false':
-            message.append('Error Self Contained: '+row['EXPLANATION_SELF_CONTAINED'])
+            message.append('Error Self Contained: '+str(row['EXPLANATION_SELF_CONTAINED']))
         if str(row['EVAL_PII']).lower()=='false':
-            message.append('Error PII: '+row['EXPLANATION_PII'])
+            message.append('Error PII: '+str(row['EXPLANATION_PII']))
         message.append('Prompt related Score: '+str(row['PROP_SCORE']))
         if row['COUNT_MISSING_PROP']>0:
             message.append(row['JUSTIFICATION_PROP'])

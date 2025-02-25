@@ -22,8 +22,9 @@ class EvalPromptSubSchemaPieline(Pipeline):
 
         #First action
         action = EvalAction()
-        action.set_model('o1-mini')
-        self.execute_regex_action(r"<JSON>(.*?)</JSON>",'MR_EVAL_PROMPT_MATCH_JSON','EVAL_PROMPT_MATCH_JSON',action)       
+        #action.set_model('o1-mini')
+        action.set_model(self.model)
+        
         self.execute_action(action.eval_sub_schema,'MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON')
 
         self.execute_action(action.extract_eval_sub_schema,'LIST_JSON_EVAL')
