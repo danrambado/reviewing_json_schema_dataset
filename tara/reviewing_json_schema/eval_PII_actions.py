@@ -1,3 +1,4 @@
+import random
 from tara.lib.action import Action
 
 class EvalPIIAction(Action):
@@ -9,7 +10,9 @@ class EvalPIIAction(Action):
 
         final_prompt=f"""
 <REQUEST>
-    Check if there is any personal identifiable information(PII) in the PROMPT
+Check for personally identifiable information (PII) in the PROMPT.
+Fake data are allowed.
+Valid examples of false data are contacts such as Anna Fields (anna.fields@email.fake, +15551234567) and Edward Money (edward.money@email.fake).
 </REQUEST>
 
 <PROMPT>
@@ -21,3 +24,10 @@ Your output must follow this structure:
 <EXPLANATION>YOUR EXPLANATION HERE</EXPLANATION>   
 """
         return self.prompt(final_prompt)
+    def promptDummy(self, prompt):
+        random_bool = random.choice(['TRUE', 'FALSE'])
+        if 'information(PII)' in prompt:
+            return f"""
+<PROMPT_OK>{random_bool}</PROMPT_OK>
+<EXPLANATION>YOUR EXPLANATION HERE</EXPLANATION>   """
+        return super().promptDummy(prompt)

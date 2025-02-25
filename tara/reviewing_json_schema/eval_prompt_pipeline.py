@@ -24,9 +24,8 @@ class EvalPromptPieline(Pipeline):
         action.set_model(self.model)
 
         self.execute_action(action.eval_match_prompt_json,'MR_EVAL_PROMPT_MATCH_JSON')
-
         self.execute_regex_action(r"<JSON>(.*?)</JSON>",'MR_EVAL_PROMPT_MATCH_JSON','EVAL_PROMPT_MATCH_JSON',action)       
-
+        
         # Save the results to a new csv
         self.save_csv()
 
@@ -38,8 +37,8 @@ if __name__ == '__main__':
 
     # Access the parameters
     pipeline= EvalPromptPieline()
-    pipeline.csv_file_input = os.path.join(sys.argv[1], 'seed.csv')
-    pipeline.csv_file_output = os.path.join(sys.argv[1], 'eval.csv')
+    pipeline.csv_file_input = os.path.join(sys.argv[1], '01_seed.csv')
+    pipeline.csv_file_output = os.path.join(sys.argv[1], '02_eval_top_layer.csv')
     pipeline.model = sys.argv[2]
     pipeline.init_row_number = sys.argv[3]
     pipeline.end_row_number = sys.argv[4]

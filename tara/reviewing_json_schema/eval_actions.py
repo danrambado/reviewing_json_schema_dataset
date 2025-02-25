@@ -1,31 +1,13 @@
 import json
+import random
+import re
 from tara.lib.action import Action
 
 class EvalAction(Action):
     def __init__(self):
         super().__init__()
 
-    def eval_match_prompt_json(self,row) -> str:
-        final_prompt=f"""
-Analyze the provided <PROMPT> and identify any text that references properties defined in <JSON_SCHEMA>.
 
-Generate a JSON output where each key corresponds to a property from <JSON_SCHEMA>, and its value is the relevant text from <PROMPT> that directly or indirectly alludes to that property. 
-The reference may be explicit, implicit, or inferred. The key criterion is whether the prompt contains any indication—direct or indirect—of the property's relevance.
-
-If a property is not mentioned in <PROMPT>, assign its value as null. Ensure that all properties from <JSON_SCHEMA> are included in the output JSON.
-
-<PROMPT>
-{row['prompt']}
-</PROMPT>
-
-<JSON_SCHEMA>
-{row['modified_schema']}
-</JSON_SCHEMA>
-
-Your output must follow this structure:
-<JSON>JSON</JSON>
-"""
-        return self.prompt(final_prompt)
     
     def eval_match_prompt_json(self,row) -> str:
         final_prompt=f"""
@@ -99,11 +81,11 @@ Your output must follow this structure:
                         # Here we can perform additional validation or processing
                         # for each matched property against its schema definition
                         schema_property = JSON_SCHEMA['properties'][property_name]
+                        schema_property ={property_name: schema_property}
                         # Add validation logic as needed
-                        
-                        output.append('<PROPERTY_NAME>'+property_name+'</PROPERTY_NAME>'+self.call_prompt_sub_schema(row,property_name,schema_property))
+                        output.append({'property_name':property_name,'analysis':self.call_prompt_sub_schema(row,property_name,schema_property)})
         except Exception as e:
-            return f"Error {e}"
+            return f"Error: {e}"
         return output
         
     def call_prompt_sub_schema(self,row,property_name,schema_property ):
@@ -144,12 +126,114 @@ Inputs:
 </JSON_SUB_SCHEMA>
 
 Your output must follow this structure:
-<ANALYSIS>
-{
-  "fully_referenced": true/false,
+<ANALYSIS>{{
+  "fully_referenced": "true/false",
   "missing_properties": ["prop1", "prop2", ...],  
   "justification": "Explanation of why certain properties are missing or ambiguous."
-}
+}}
 </ANALYSIS>
 """
         return self.prompt(final_prompt)
+
+    def extract_eval_sub_schema(self,row) -> str:
+        # row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON]
+        try:
+            attribute_list=[]
+            #print(row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON'])
+            #output = re.findall(r'<PROPERTY>(.*?)</PROPERTY>', row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON'],re.DOTALL)
+            output=row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON']
+            if len(output)==0:
+                return []
+            for property_ananlysis in output:
+                try:
+                    #matches_property_name= re.findall(r'<PROPERTY_NAME>(.*?)</PROPERTY_NAME>', match,re.DOTALL)
+                    #property_name=matches_property_name[0].strip()
+                    matches_analisis= re.findall(r'<ANALYSIS>(.*?)</ANALYSIS>', property_ananlysis['analysis'],re.DOTALL)
+                    analysis=matches_analisis[0].strip()
+                    json_analysis=json.loads(analysis)
+                    json_analysis['property_name']=property_ananlysis['property_name']
+                    attribute_list.append(json_analysis)
+                except Exception as e:
+                    attribute_list.append(f"{{'error':'{e}'}}")
+                
+            return attribute_list
+        except Exception as e:
+                return f"'error':'{e}'"
+    
+    def extract_message(self,row) -> str:
+        message=[]
+        property_list=row['LIST_JSON_EVAL']
+        for property in property_list:
+            if ('fully_referenced' in property
+             and str(property['fully_referenced']).lower()=='false'):    
+                message.append('Error in property "'+property['property_name']+'": '+property['justification'])
+        return '\n'.join(message) if message else ""
+
+    
+
+        
+        
+    def count_prop_fully_referenced(self,row,value=True) -> str:
+        json_list=row['LIST_JSON_EVAL']
+        count=0
+        for eval in json_list:
+            if ('fully_referenced' in eval
+            and str(eval['fully_referenced']).lower()==str(value).lower()): count+=1
+        return count
+    
+    def count_prop_not_fully_referenced(self,row) -> str:
+        return self.count_prop_fully_referenced(row,False)
+
+    def count_missing_prop(self,row) -> str:
+        json_list=row['LIST_JSON_EVAL']
+        count=0
+        for eval in json_list:
+            if 'missing_properties' in eval:
+                count+=len(eval['missing_properties'])
+        return count
+
+    def promptDummy(self, prompt):
+        random_bool = random.choice(['TRUE', 'FALSE'])
+        if '<JSON_SUB_SCHEMA>' in prompt:
+            return f"""
+<ANALYSIS>{{
+  "fully_referenced": "{random_bool}",
+  "missing_properties": ["prop1", "prop2"],  
+  "justification": "Explanation of why certain properties are missing or ambiguous."
+}}
+</ANALYSIS>"""
+        elif 'Analyze the provided <PROMPT>' in prompt:
+            return """
+<JSON>
+{
+       "technique_name": "Convolutional Neural ...",
+       "technique_type": "CNNs are a type of ne...",
+       "architecture": "The core idea behind th..."
+}
+</JSON>"""
+        return super().promptDummy(prompt)
+
+
+if __name__ == '__main__':
+    # Check if the correct number of arguments is provided
+    row={}
+    row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON']=[{'property_name':'XX',
+                                                  'analysis':"""
+'<ANALYSIS>{
+  "fully_referenced": "true/false",
+  "missing_properties": ["prop1", "prop2"],  
+  "justification": "Explanation of why certain properties are missing or ambiguous."
+}
+</ANALYSIS>
+'"""}
+,{'property_name':'YY',
+'analysis':"""
+'<ANALYSIS>{
+  "fully_referenced": "true/false",
+  "missing_properties": ["prop1", "prop2"],  
+  "justification": "Explanation of why certain properties are missing or ambiguous."
+}
+</ANALYSIS>
+'"""}]
+    action=EvalAction()
+    print(action.extract_eval_sub_schema(row))

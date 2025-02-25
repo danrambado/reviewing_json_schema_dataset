@@ -1,10 +1,11 @@
+import logging
 from tara.lib.pipeline import Pipeline
 # include actions
 from tara.reviewing_json_schema.eval_actions import EvalAction
 import sys
 import os
 
-class EvalPromptPieline(Pipeline):
+class EvalPromptSubSchemaPieline(Pipeline):
     def __init__(self):
         super().__init__()
     
@@ -21,23 +22,34 @@ class EvalPromptPieline(Pipeline):
 
         #First action
         action = EvalAction()
-        action.set_model(self.model)
-
+        action.set_model('o1-mini')
+        self.execute_regex_action(r"<JSON>(.*?)</JSON>",'MR_EVAL_PROMPT_MATCH_JSON','EVAL_PROMPT_MATCH_JSON',action)       
         self.execute_action(action.eval_sub_schema,'MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON')
 
+        self.execute_action(action.extract_eval_sub_schema,'LIST_JSON_EVAL')
+
+        self.execute_action(action.count_prop_fully_referenced,'COUNT_FULLY_REFERENCED_OK')
+        self.execute_action(action.count_prop_not_fully_referenced,'COUNT_FULLY_REFERENCED_FAIL')
+        self.execute_action(action.count_missing_prop,'COUNT_MISSING_PROP')
+
+        self.execute_action(action.extract_message,'JUSTIFICATION_PROP')
+
+        self.df['PROP_SCORE']=self.df['COUNT_FULLY_REFERENCED_OK']/(self.df['COUNT_FULLY_REFERENCED_OK']+self.df['COUNT_FULLY_REFERENCED_FAIL'])
         # Save the results to a new csv
         self.save_csv()
-
+if len(sys.argv) != 5:
+        print("Usage: uv run -m tara.reviewing_json_schema.eval_prompt_sub_schema_pipeline  <folder> <model> <init_row> <end_row>")
+        sys.exit(1)
+folder = sys.argv[1]
+logging.basicConfig(filename=os.path.join(folder,'app.log'), level=logging.INFO, 
+                        format='%(asctime)s - %(levelname)s - %(message)s')
 if __name__ == '__main__':
     # Check if the correct number of arguments is provided
-    if len(sys.argv) != 5:
-        print("Usage: uv run -m tara.reviewing_json_schema.eval_prompt_pipeline  <folder> <model> <init_row> <end_row>")
-        sys.exit(1)
 
     # Access the parameters
-    pipeline= EvalPromptPieline()
-    pipeline.csv_file_input = os.path.join(sys.argv[1], 'seed.csv')
-    pipeline.csv_file_output = os.path.join(sys.argv[1], 'eval.csv')
+    pipeline= EvalPromptSubSchemaPieline()
+    pipeline.csv_file_input = os.path.join(sys.argv[1], '02_eval_top_layer.csv')
+    pipeline.csv_file_output = os.path.join(sys.argv[1], '03_eval_sub_schema.csv')
     pipeline.model = sys.argv[2]
     pipeline.init_row_number = sys.argv[3]
     pipeline.end_row_number = sys.argv[4]

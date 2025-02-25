@@ -1,3 +1,4 @@
+import random
 from tara.lib.action import Action
 
 class EvalSelfContainedAction(Action):
@@ -21,3 +22,10 @@ Your output must follow this structure:
 <EXPLANATION>YOUR EXPLANATION HERE</EXPLANATION>   
 """
         return self.prompt(final_prompt)
+    def promptDummy(self, prompt):
+        random_bool = random.choice(['TRUE', 'FALSE'])
+        if 'self-contained' in prompt:
+            return f"""
+<PROMPT_OK>{random_bool}</PROMPT_OK>
+<EXPLANATION>YOUR EXPLANATION HERE</EXPLANATION>   """
+        return super().promptDummy(prompt)
