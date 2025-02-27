@@ -8,6 +8,7 @@ dependencies = [
     "fastjsonschema>=2.21.1",
     "fastparquet>=2024.11.0",
     "gspread>=6.1.4",
+    "ipykernel>=6.29.5",
     "jsonschema>=4.23.0",
     "langdetect>=1.0.9",
     "mysql-connector-python>=9.2.0",
