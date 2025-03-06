@@ -28,8 +28,8 @@ class EvalPromptSubSchemaPieline(Pipeline):
         
         self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
         self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
-        self.df['SCHEMA_SIMPLIFIED'] = self.df['schema'].apply(extract_main_arguments)
-        self.execute_action(action.format_json,'REFERENCED_JSON_FORMATED')
+        # self.df['SCHEMA_SIMPLIFIED'] = self.df['schema'].apply(extract_main_arguments)
+        # self.execute_action(action.format_json,'REFERENCED_JSON_FORMATED')
 
 
 
@@ -56,9 +56,9 @@ if __name__ == '__main__':
 
     # Access the parameters
     pipeline= EvalPromptSubSchemaPieline()
-    pipeline.csv_file_input = os.path.join(sys.argv[1], '00_seed_100_200.csv')
+    pipeline.csv_file_input = os.path.join(sys.argv[1], '00_seed_500_600.csv')
     # pipeline.csv_file_output = os.path.join(sys.argv[1], 'analysis.csv')
-    pipeline.csv_file_output = os.path.join(sys.argv[1], '01_output_100_200.csv')
+    pipeline.csv_file_output = os.path.join(sys.argv[1], '01_output_500_600.csv')
     pipeline.model = sys.argv[2]
     pipeline.init_row_number = sys.argv[3]
     pipeline.end_row_number = sys.argv[4]

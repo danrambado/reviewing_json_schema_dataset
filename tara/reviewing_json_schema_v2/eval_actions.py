@@ -68,25 +68,34 @@ class EvalAction(Action):
 
     def call_prompt_sub_schema(self,row,property_name,schema_property ):
         final_prompt=f"""
-Verify if the PROMPT contains enough information to construct a valid JSON based on the provided <JSON_SCHEMA>.
-For instance, if the <JSON_SCHEMA> includes a property called “event_date”, the PROMPT should reference “event_date” in some form.
-Even if the schema requires a specific format (e.g., YYYY-MM-DD), mentioning a date like “Feb 14, 2028” is acceptable since the schema will enforce the format during JSON generation.
+Task: Verify Prompt Compliance with JSON Schema
 
-Reference Types:
-	•	Explicit: Directly mentioning a property or value from the <JSON_SCHEMA>.
-	•	Implicit: Alluding to a property through synonyms, descriptions, or context.
-	•	Inferred: Logically deriving a property from the PROMPT even if not stated verbatim.
-Evaluation Criteria:
-	1.	Property Matching: Does the PROMPT reference all required properties in the <JSON_SCHEMA> (e.g., “event_date”)?
-	2.	Value Alignment: If the <JSON_SCHEMA> includes constraints like data types, allowed values, or formats, does the PROMPT provide enough detail to satisfy these constraints? 
-        The PROMPT doesn't need to follow the exact type described in the schema since the schema will be provided along with the verified prompt.
-    3.  Completeness and Informational Depth: Does the PROMPT include sufficient detail to capture the full meaning and overall intent of the <JSON_SCHEMA> without missing any key aspects?
+Ensure that the <PROMPT> contains sufficient information to construct a valid JSON based on the provided <JSON_SCHEMA>. 
+Every property at all levels of the <JSON_SCHEMA> must be analyzed to determine if it is referenced in the <PROMPT>.
 
-Enhance all properties in <JSON_SCHEMA> by adding two new fields:
-	- referenced: A boolean (true/false) indicating whether the prompt contains a reference to the property.
-	- text_reference: A string capturing the referenced text from the prompt; if no reference exists, this field contain an explanation.
+A property is considered referenced if the <PROMPT> explicitly or implicitly includes relevant information that aligns with the schema's structure, the property name and its constraints (data types, allowed values, formats, etc.). 
+If a property is not referenced, provide an explanation in the text_reference field.
 
-Inputs:
+Reference Types
+	•	Explicit: The property or value is directly mentioned in the <PROMPT>.
+	•	Implicit: The reference exists through synonyms, descriptions, or context.
+	•	Inferred: Logical deduction of a property from the <PROMPT> without direct mention.
+
+Evaluation Criteria
+	1.	Property Matching - Does the <PROMPT> reference all properties defined in the <JSON_SCHEMA> (including nested properties at all levels)?
+	2.	Value Alignment - If constraints exist (data types, allowed values, formats), does the <PROMPT> provide enough detail to satisfy them? The <PROMPT> doesn't need to follow the exact type described in the schema, as the schema will enforce formatting during JSON generation.
+	3.	Completeness & Informational Depth - Does the <PROMPT> capture the full meaning and intent of the <JSON_SCHEMA> without omitting key aspects?
+
+Enhancements to JSON Schema
+
+For each property at all levels of the JSON schema, add the following attributes:
+	•	referenced (boolean) - true if the property is referenced in the <PROMPT>, false otherwise.
+	•	text_reference (string) - The text from the <PROMPT> that references the property. If no reference exists, provide an explanation.
+
+This must be applied recursively to all nested properties and objects.
+
+Inputs
+
 <PROMPT>
 {row['prompt']}
 </PROMPT>
@@ -95,18 +104,41 @@ Inputs:
 {schema_property}
 </JSON_SCHEMA>
 
-Your output must follow this structure:
+Expected Output Format (All Levels Included)
+
 <ANALYSIS>
 {{
     "property_a": {{
       "type": "string",
-      "referenced": "true/false",
-      "text_reference": "the text in the prompt that references the property",
+      "referenced": true/false,
+      "text_reference": "the text in the prompt that references the property (or an explanation if absent)"
+    }},
+    "nested_object": {{
+      "type": "object",
+      "referenced": true/false,
+      "text_reference": "..."
+      "properties": {{
+        "nested_property": {{
+          "type": "integer",
+          "referenced": true/false,
+          "text_reference": "..."
+        }},
+        "deeply_nested_object": {{
+          "type": "object",
+          "referenced": true/false,
+          "text_reference": "...",
+          "properties": {{
+            "deepest_property": {{
+              "type": "boolean",
+              "referenced": true/false,
+              "text_reference": "..."
+            }}
+          }}
+        }}
+      }}
     }}
 }}
 </ANALYSIS>
-
-Make sure each property in the <JSON_SCHEMA> is represented in the output with the "referenced" and "text_reference" fields.
 """
         return self.prompt(final_prompt)
 
