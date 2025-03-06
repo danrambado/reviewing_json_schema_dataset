@@ -56,9 +56,9 @@ if __name__ == '__main__':
 
     # Access the parameters
     pipeline= EvalPromptSubSchemaPieline()
-    pipeline.csv_file_input = os.path.join(sys.argv[1], '00_seed.csv')
+    pipeline.csv_file_input = os.path.join(sys.argv[1], '00_seed_100_200.csv')
     # pipeline.csv_file_output = os.path.join(sys.argv[1], 'analysis.csv')
-    pipeline.csv_file_output = os.path.join(sys.argv[1], 'test.csv')
+    pipeline.csv_file_output = os.path.join(sys.argv[1], '01_output_100_200.csv')
     pipeline.model = sys.argv[2]
     pipeline.init_row_number = sys.argv[3]
     pipeline.end_row_number = sys.argv[4]

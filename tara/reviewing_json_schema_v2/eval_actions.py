@@ -105,6 +105,8 @@ Your output must follow this structure:
     }}
 }}
 </ANALYSIS>
+
+Make sure each property in the <JSON_SCHEMA> is represented in the output with the "referenced" and "text_reference" fields.
 """
         return self.prompt(final_prompt)
 
@@ -162,32 +164,11 @@ Your output must follow this structure:
                 count+=len(eval['missing_properties'])
         return count
 
-    def promptDummy(self, prompt):
-        random_bool = random.choice(['TRUE', 'FALSE'])
-        if '<JSON_SUB_SCHEMA>' in prompt:
-            return f"""
-<ANALYSIS>{{
-  "fully_referenced": "{random_bool}",
-  "missing_properties": ["prop1", "prop2"],  
-  "justification": "Explanation of why certain properties are missing or ambiguous."
-}}
-</ANALYSIS>"""
-        elif 'Analyze the provided <PROMPT>' in prompt:
-            return """
-<JSON>
-{
-       "technique_name": "Convolutional Neural ...",
-       "technique_type": "CNNs are a type of ne...",
-       "architecture": "The core idea behind th..."
-}
-</JSON>"""
-        return super().promptDummy(prompt)
-
-
-
     def format_json(self, row):
         final_prompt=f"""
-Format the <JSON>, follow the <STRUCTURE> to organize. Just return the formatted JSON.
+Format the <JSON> following the order of the properties in <STRUCTURE>.
+Don't change any value of the <JSON>, only the order of the properties.
+Just return the formatted JSON.
 
 <JSON>
 {row['REFERENCED_JSON']}
@@ -198,27 +179,3 @@ Format the <JSON>, follow the <STRUCTURE> to organize. Just return the formatted
 </STRUCTURE>
         """
         return self.prompt(final_prompt)
-
-if __name__ == '__main__':
-    # Check if the correct number of arguments is provided
-    row={}
-    row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON']=[{'property_name':'XX',
-                                                  'analysis':"""
-'<ANALYSIS>{
-  "fully_referenced": "true/false",
-  "missing_properties": ["prop1", "prop2"],  
-  "justification": "Explanation of why certain properties are missing or ambiguous."
-}
-</ANALYSIS>
-'"""}
-,{'property_name':'YY',
-'analysis':"""
-'<ANALYSIS>{
-  "fully_referenced": "true/false",
-  "missing_properties": ["prop1", "prop2"],  
-  "justification": "Explanation of why certain properties are missing or ambiguous."
-}
-</ANALYSIS>
-'"""}]
-    action=EvalAction()
-    print(action.extract_eval_sub_schema(row))
