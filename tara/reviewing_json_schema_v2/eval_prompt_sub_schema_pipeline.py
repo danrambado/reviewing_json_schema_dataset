@@ -53,7 +53,7 @@ class EvalPromptSubSchemaPieline(Pipeline):
         self.df['schema_properties'] = self.df['summary_json'].apply(lambda x: x['schema_count'])
         self.df['false_properties'] = self.df['summary_json'].apply(lambda x: x['referenced_false'])
 
-        self.format_output()
+        # self.format_output()
         # Save the results to a new csv
         self.save_csv()
 if len(sys.argv) != 5:

@@ -106,7 +106,7 @@ class ExtractJsonReferenceAction(Action):
         return ExtractJsonReferenceAction.remove_properties_suffix(property_names)
 
     def remove_properties_suffix(strings):
-        return [s.replace('properties.', '') for s in strings]
+        return [s.replace('properties.', '').replace('if.','').replace('then.','').replace('else.','') for s in strings]
 
     # Clean adn load json
     def extract_json(referenced_json):
@@ -128,13 +128,17 @@ class ExtractJsonReferenceAction(Action):
         referenced_false = list(set(referenced_false) & set(property_count))
 
         difference_missing = list(set(difference) - set(referenced_false))
+
+        coditional_sentence = '"if":' in json.dumps(json_schema)
+
         return {"schema_count": len(property_count),
                 "referenced_true": match,
                 "score_reference": match/len(property_count),
                 "list_missing_properties_prompt": difference_missing,
                 "missing_properties_prompt": len(difference_missing),
                 "list_referenced_false": referenced_false,
-                "referenced_false": len(referenced_false)
+                "referenced_false": len(referenced_false),
+                "coditional_sentence": coditional_sentence
             }
 
     #function to format the json in this output string 
@@ -159,6 +163,8 @@ class ExtractJsonReferenceAction(Action):
             f"    •   Count: {summary_dict['missing_properties_prompt']}\n"
             f"    •   List: {', '.join(summary_dict['list_missing_properties_prompt'])}\n"        
         )
+        if summary_dict['coditional_sentence']:
+            output+= "Note: The schema includes conditional sentences."
         return output
     
     def extract_referenced_json(self,row):
