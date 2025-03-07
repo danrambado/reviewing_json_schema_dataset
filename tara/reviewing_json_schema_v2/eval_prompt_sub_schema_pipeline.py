@@ -1,10 +1,12 @@
 import logging
 from tara.lib.pipeline import Pipeline
-from tara.reviewing_json_schema_v2.utils.json_main_arg_parser import extract_main_arguments
+#from tara.reviewing_json_schema_v2.utils.json_main_arg_parser import extract_main_arguments
 # include actions
+from tara.reviewing_json_schema_v2.extract_json_reference_action import ExtractJsonReferenceAction
 from tara.reviewing_json_schema_v2.eval_actions import EvalAction
 import sys
 import os
+from tara.utils.google_sheet import googleSheet
 
 class EvalPromptSubSchemaPieline(Pipeline):
     def __init__(self):
@@ -14,6 +16,17 @@ class EvalPromptSubSchemaPieline(Pipeline):
         self.df = self.df.iloc[int(self.init_row_number):int(self.end_row_number)]
         self.console.log(f"Filtering from row {self.init_row_number}  to row {self.end_row_number}")
         self.console.log(f"Total rows: {len(self.df)}")
+
+    def format_output(self):
+        df2=self.df.rename(columns={'REFERENCED_JSON_FORMATED': 'reference_JSON',
+                'INTERNAL_ID':'internal_id',
+                'TASK_ID': 'TASK'})
+
+        # keep the columns needed
+        df2 = df2[['TASK','languageCode', 'internal_id', 'prompt', 'schema', 'REFERENCED_JSON', 'reference_JSON', 'summary','score_reference','schema_properties','missing_properties','false_properties']]
+        df2['languageCode'] = 'en_US'
+        self.df=df2
+
 
     def process(self):
         # Orchestrates the pipeline by reading the input CSV file, executing the actions in parallel,
@@ -28,21 +41,19 @@ class EvalPromptSubSchemaPieline(Pipeline):
         
         self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
         self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
-        # self.df['SCHEMA_SIMPLIFIED'] = self.df['schema'].apply(extract_main_arguments)
-        # self.execute_action(action.format_json,'REFERENCED_JSON_FORMATED')
 
+        action= ExtractJsonReferenceAction()
 
+        self.execute_action(action.extract_referenced_json,'REFERENCED_JSON_FORMATED')
+        self.execute_action(action.summary_json,'summary_json')
+        self.execute_action(action.summary_format,'summary')
 
+        self.df['score_reference'] = self.df['summary_json'].apply(lambda x: x['score_reference'])
+        self.df['missing_properties'] = self.df['summary_json'].apply(lambda x: x['missing_properties_prompt'])
+        self.df['schema_properties'] = self.df['summary_json'].apply(lambda x: x['schema_count'])
+        self.df['false_properties'] = self.df['summary_json'].apply(lambda x: x['referenced_false'])
 
-
-        # self.execute_action(action.count_prop_fully_referenced,'COUNT_FULLY_REFERENCED_OK')
-        # self.execute_action(action.count_prop_not_fully_referenced,'COUNT_FULLY_REFERENCED_FAIL')
-        # self.execute_action(action.count_missing_prop,'COUNT_MISSING_PROP')
-
-        # self.execute_action(action.extract_message,'JUSTIFICATION_PROP')
-
-        # self.df['PROP_SCORE']=self.df['COUNT_FULLY_REFERENCED_OK']/(self.df['COUNT_FULLY_REFERENCED_OK']+self.df['COUNT_FULLY_REFERENCED_FAIL'])
-        
+        self.format_output()
         # Save the results to a new csv
         self.save_csv()
 if len(sys.argv) != 5:
@@ -56,11 +67,18 @@ if __name__ == '__main__':
 
     # Access the parameters
     pipeline= EvalPromptSubSchemaPieline()
-    pipeline.csv_file_input = os.path.join(sys.argv[1], '00_seed_500_600.csv')
+    pipeline.csv_file_input = os.path.join(sys.argv[1], '00_seed.csv')
     # pipeline.csv_file_output = os.path.join(sys.argv[1], 'analysis.csv')
-    pipeline.csv_file_output = os.path.join(sys.argv[1], '01_output_500_600.csv')
+    pipeline.csv_file_output = os.path.join(sys.argv[1], '01_output.csv')
     pipeline.model = sys.argv[2]
     pipeline.init_row_number = sys.argv[3]
     pipeline.end_row_number = sys.argv[4]
 
     pipeline.process()
+
+    sheet_id="1W8ZTYjzonvHQs54TcxvdKQE_hau65Mf_nef3iegwfPA"
+    # Extract the last folder name 
+    last_folder = sys.argv[1].rstrip('/').split('/')[-1]
+    # Replace Result in Google sheet
+    sheet = googleSheet()
+    sheet.from_csv_to_sheet(pipeline.csv_file_output , sheet_id,last_folder)    

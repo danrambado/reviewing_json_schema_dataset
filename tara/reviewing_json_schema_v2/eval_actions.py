@@ -143,6 +143,18 @@ Expected Output Format (All Levels Included)
         return self.prompt(final_prompt)
 
     def extract_eval_sub_schema(self,row) -> str:
+        def extract_json(text):
+            output = re.findall(r'<ANALYSIS>(.*?)</ANALYSIS>', str(text),re.DOTALL)
+            
+            if len(output)!=1:
+                output = re.findall(r'```json\n(.*?)```', str(text),re.DOTALL)
+                if len(output)==1:
+                    return output[0].strip()
+                else:
+                    return text.strip()
+            else:
+                return output[0].strip()
+
         # row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON]
         try:
             attribute_list=[]
@@ -155,17 +167,22 @@ Expected Output Format (All Levels Included)
                 try:
                     #matches_property_name= re.findall(r'<PROPERTY_NAME>(.*?)</PROPERTY_NAME>', match,re.DOTALL)
                     #property_name=matches_property_name[0].strip()
-                    matches_analisis= re.findall(r'<ANALYSIS>(.*?)</ANALYSIS>', property_ananlysis['analysis'],re.DOTALL)
-                    analysis=matches_analisis[0].strip()
+                    #matches_analisis= re.findall(r'<ANALYSIS>(.*?)</ANALYSIS>', property_ananlysis['analysis'],re.DOTALL)
+                    #analysis=matches_analisis[0].strip()
+                    analysis=extract_json(property_ananlysis['analysis'])
                     json_analysis=json.loads(analysis)
                     json_analysis['property_name']=property_ananlysis['property_name']
                     attribute_list.append(json_analysis)
                 except Exception as e:
-                    attribute_list.append(f"{{'error':'{e}'}}")
+                    attribute_list.append({
+                        property_ananlysis['property_name']:{
+                                            "referenced": False,
+                                            "text_reference": f'Error {str(e)}' }
+                                            })
                 
             return attribute_list
         except Exception as e:
-                return f"'error':'{e}'"
+                return [{'error': str(e)}]
     
     def extract_message(self,row) -> str:
         message=[]
