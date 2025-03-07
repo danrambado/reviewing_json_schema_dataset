@@ -1,3 +1,4 @@
+import ast
 import json
 import random
 import re
@@ -44,24 +45,49 @@ class EvalAction(Action):
 #                            },
 # ...
         try:
-            JSON_SCHEMA = json.loads(row['schema'])
             schema_dict = json.loads(row['schema'])  # Convert string to JSON object
         
             # Extract top-level properties
             properties = schema_dict.get("properties", {})
             extracted_keys = list(properties.keys())  # Extract only top-level keys
-
+            # If the first level does not include properties and it is array type -> extract top-level properties of items
+            # Example:
+            #{
+            #  "type": "array",
+            #  "items": {
+            #    "type": "object",
+            #    "properties": {
+            #      "initiative_name": {
+            #        "type": "string",
+            #        "description": "Name of the social justice initiative"
+            #      },
+            #      "description": {
+            #        "type": "string",
+            #        "description": "Detailed description of the initiative's objectives and activities"
+            #      },
+            #...
+            top_layer_array=False
+            if len(extracted_keys)==0:
+                if schema_dict.get('type')=="array" and 'items' in schema_dict:
+                    #print(schema_dict['items'])
+                    schema_dict=schema_dict['items']
+                    properties = schema_dict.get("properties", {})
+                    extracted_keys = list(properties.keys())
+                    top_layer_array=True
             output=[]
-            # For each property matched in JSON_MATCH
+            # For each property
             for property_name in extracted_keys:
-                # Verify this property exists in the schema
-                if property_name in JSON_SCHEMA.get('properties', {}):
-                    # Here we can perform additional validation or processing
-                    # for each matched property against its schema definition
-                    schema_property = JSON_SCHEMA['properties'][property_name]
-                    schema_property ={property_name: schema_property}
-                    # Add validation logic as needed
-                    output.append({'property_name':property_name,'analysis':self.call_prompt_sub_schema(row,property_name,schema_property)})
+
+                schema_property = schema_dict['properties'][property_name]
+                if top_layer_array:
+                    property_name_aux='items.'+property_name
+                else:
+                    property_name_aux=property_name
+
+                schema_property ={property_name_aux: schema_property}
+
+                # Call the model to generate json_reference
+                output.append({'property_name':property_name_aux,'analysis':self.call_prompt_sub_schema(row,property_name_aux,schema_property)})
         except Exception as e:
             return f"Error: {e}"
         return output
@@ -144,10 +170,11 @@ Expected Output Format (All Levels Included)
 
     def extract_eval_sub_schema(self,row) -> str:
         def extract_json(text):
-            output = re.findall(r'<ANALYSIS>(.*?)</ANALYSIS>', str(text),re.DOTALL)
+            text = str(text).replace("\\'", '')
+            output = re.findall(r'<ANALYSIS>(.*?)</ANALYSIS>', text, re.DOTALL)
             
             if len(output)!=1:
-                output = re.findall(r'```json\n(.*?)```', str(text),re.DOTALL)
+                output = re.findall(r'```json\n(.*?)```', text, re.DOTALL)
                 if len(output)==1:
                     return output[0].strip()
                 else:
@@ -155,20 +182,16 @@ Expected Output Format (All Levels Included)
             else:
                 return output[0].strip()
 
-        # row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON]
+
         try:
             attribute_list=[]
-            #print(row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON'])
-            #output = re.findall(r'<PROPERTY>(.*?)</PROPERTY>', row['MR_EVAL_PROMPT_MATCH_SUB_SCHEMA_JSON'],re.DOTALL)
             output=row['MR_EVAL_SUB_SCHEMA']
+            # :TODO uncoment this line to read from string from csv previous
+            #output=ast.literal_eval(row['MR_EVAL_SUB_SCHEMA'])
             if len(output)==0:
                 return []
             for property_ananlysis in output:
                 try:
-                    #matches_property_name= re.findall(r'<PROPERTY_NAME>(.*?)</PROPERTY_NAME>', match,re.DOTALL)
-                    #property_name=matches_property_name[0].strip()
-                    #matches_analisis= re.findall(r'<ANALYSIS>(.*?)</ANALYSIS>', property_ananlysis['analysis'],re.DOTALL)
-                    #analysis=matches_analisis[0].strip()
                     analysis=extract_json(property_ananlysis['analysis'])
                     json_analysis=json.loads(analysis)
                     json_analysis['property_name']=property_ananlysis['property_name']
@@ -176,8 +199,7 @@ Expected Output Format (All Levels Included)
                 except Exception as e:
                     attribute_list.append({
                         property_ananlysis['property_name']:{
-                                            "referenced": False,
-                                            "text_reference": f'Error {str(e)}' }
+                                            "error": f'(IGNORE) Error {str(e)}' }
                                             })
                 
             return attribute_list

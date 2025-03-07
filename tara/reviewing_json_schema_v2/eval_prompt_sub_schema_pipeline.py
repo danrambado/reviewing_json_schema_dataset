@@ -23,7 +23,7 @@ class EvalPromptSubSchemaPieline(Pipeline):
                 'TASK_ID': 'TASK'})
 
         # keep the columns needed
-        df2 = df2[['TASK','languageCode', 'internal_id', 'prompt', 'schema', 'REFERENCED_JSON', 'reference_JSON', 'summary','score_reference','schema_properties','missing_properties','false_properties']]
+        df2 = df2[['TASK','languageCode', 'internal_id', 'prompt', 'schema','MR_EVAL_SUB_SCHEMA', 'REFERENCED_JSON', 'reference_JSON', 'summary','score_reference','schema_properties','missing_properties','false_properties']]
         df2['languageCode'] = 'en_US'
         self.df=df2
 
