@@ -27,6 +27,12 @@ class EvalPromptSubSchemaPieline(Pipeline):
         df2['languageCode'] = 'en_US'
         self.df=df2
 
+    def format_eval(self):
+        df2=self.df
+
+        # keep the columns needed
+        df2 = df2[['TASK_ID','summary','score_reference','priority']]
+        self.df=df2
 
     def process(self):
         # Orchestrates the pipeline by reading the input CSV file, executing the actions in parallel,
@@ -39,8 +45,8 @@ class EvalPromptSubSchemaPieline(Pipeline):
         #action.set_model('o1-mini')
         action.set_model(self.model)
         
-        self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
-        self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
+        #self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
+        #self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
 
         action= ExtractJsonReferenceAction()
 
@@ -49,9 +55,16 @@ class EvalPromptSubSchemaPieline(Pipeline):
         self.execute_action(action.summary_format,'summary')
 
         self.df['score_reference'] = self.df['summary_json'].apply(lambda x: x['score_reference'])
-        self.df['missing_properties'] = self.df['summary_json'].apply(lambda x: x['missing_properties_prompt'])
         self.df['schema_properties'] = self.df['summary_json'].apply(lambda x: x['schema_count'])
-        self.df['false_properties'] = self.df['summary_json'].apply(lambda x: x['referenced_false'])
+        self.df['missing_properties'] = self.df['summary_json'].apply(lambda x: x['missing_properties_prompt'])
+        self.df['referenced_false'] = self.df['summary_json'].apply(lambda x: x['referenced_false'])
+        self.df['referenced_true'] = self.df['summary_json'].apply(lambda x: x['referenced_true'])
+        self.df['accuracy'] = self.df['summary_json'].apply(lambda x: x['accuracy'])
+        self.df['priority'] = self.df['score_reference'].apply(lambda x: 1 if x == 1 else (2 if x < 0.6 else 3))
+
+        # Filter accuracy > 0.9
+        self.df=self.df[self.df['accuracy']>0.9]
+        self.format_eval()
 
         # self.format_output()
         # Save the results to a new csv

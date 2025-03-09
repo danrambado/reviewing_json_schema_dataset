@@ -110,8 +110,12 @@ class ExtractJsonReferenceAction(Action):
 
     # Clean adn load json
     def extract_json(referenced_json):
+        
         #referenced_json = ast.literal_eval(referenced_json)
+
         #referenced_json = json.loads(json.dumps(referenced_json))
+        #Uncomment this line to read from csv
+        return referenced_json
         return json.dumps(referenced_json, indent=4)
 
     def summary(json_schema,referenced_json):
@@ -131,6 +135,8 @@ class ExtractJsonReferenceAction(Action):
 
         coditional_sentence = '"if":' in json.dumps(json_schema)
 
+        accuracy = 1-len(difference_missing)/len(property_count)
+
         return {"schema_count": len(property_count),
                 "referenced_true": match,
                 "score_reference": match/len(property_count),
@@ -138,7 +144,8 @@ class ExtractJsonReferenceAction(Action):
                 "missing_properties_prompt": len(difference_missing),
                 "list_referenced_false": referenced_false,
                 "referenced_false": len(referenced_false),
-                "coditional_sentence": coditional_sentence
+                "coditional_sentence": coditional_sentence,
+                "accuracy": accuracy
             }
 
     #function to format the json in this output string 
@@ -164,14 +171,20 @@ class ExtractJsonReferenceAction(Action):
             f"    •   List: {', '.join(summary_dict['list_missing_properties_prompt'])}\n"        
         )
         if summary_dict['coditional_sentence']:
-            output+= "Note: The schema includes conditional sentences."
+            output+= "\nNote: The schema includes conditional sentences."
         return output
     
     def extract_referenced_json(self,row):
         return ExtractJsonReferenceAction.extract_json(row['REFERENCED_JSON'])
     
     def summary_json(self,row):
-        return ExtractJsonReferenceAction.summary(json.loads(row['schema']), json.loads(row['REFERENCED_JSON_FORMATED']))
+        try:
+            return ExtractJsonReferenceAction.summary(json.loads(row['schema']), json.loads(row['REFERENCED_JSON_FORMATED']))
+        except Exception as e:
+            return {"error": str(e)}
     
     def summary_format(self,row):
-        return ExtractJsonReferenceAction.format_summary_output(row['summary_json'])
+        try:
+            return ExtractJsonReferenceAction.format_summary_output(row['summary_json'])
+        except Exception as e:
+            return {"error": str(e)}
