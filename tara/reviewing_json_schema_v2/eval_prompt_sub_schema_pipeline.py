@@ -60,6 +60,12 @@ class EvalPromptSubSchemaPieline(Pipeline):
         self.df['referenced_false'] = self.df['summary_json'].apply(lambda x: x['referenced_false'])
         self.df['referenced_true'] = self.df['summary_json'].apply(lambda x: x['referenced_true'])
         self.df['accuracy'] = self.df['summary_json'].apply(lambda x: x['accuracy'])
+
+        # Create new column Priority with values
+        # - 1 if df['score_reference']==1
+        # - 2 if df['score_reference']<0.6
+        # - 3 if 1<df['score_reference']>=0.6
+
         self.df['priority'] = self.df['score_reference'].apply(lambda x: 1 if x == 1 else (2 if x < 0.6 else 3))
 
         # Filter accuracy > 0.9
