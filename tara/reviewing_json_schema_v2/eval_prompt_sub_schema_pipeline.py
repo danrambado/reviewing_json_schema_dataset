@@ -23,7 +23,7 @@ class EvalPromptSubSchemaPieline(Pipeline):
                 'TASK_ID': 'TASK'})
 
         # keep the columns needed
-        df2 = df2[['TASK','languageCode', 'internal_id', 'prompt', 'schema','MR_EVAL_SUB_SCHEMA', 'REFERENCED_JSON', 'reference_JSON', 'summary','score_reference','schema_properties','missing_properties','false_properties']]
+        df2 = df2[['TASK','languageCode', 'internal_id', 'prompt', 'schema','MR_EVAL_SUB_SCHEMA', 'REFERENCED_JSON', 'reference_JSON', 'summary','score_reference','schema_properties','missing_properties','referenced_false','accuracy']]
         df2['languageCode'] = 'en_US'
         self.df=df2
 
@@ -45,8 +45,9 @@ class EvalPromptSubSchemaPieline(Pipeline):
         #action.set_model('o1-mini')
         action.set_model(self.model)
         
-        #self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
-        #self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
+        # Comment these lines for eval
+        self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
+        self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
 
         action= ExtractJsonReferenceAction()
 
@@ -69,10 +70,10 @@ class EvalPromptSubSchemaPieline(Pipeline):
         self.df['priority'] = self.df['score_reference'].apply(lambda x: 1 if x == 1 else (2 if x < 0.6 else 3))
 
         # Filter accuracy > 0.9
-        self.df=self.df[self.df['accuracy']>0.9]
-        self.format_eval()
+        #self.df=self.df[self.df['accuracy']>0.9]
+        #self.format_eval()
 
-        # self.format_output()
+        self.format_output()
         # Save the results to a new csv
         self.save_csv()
 if len(sys.argv) != 5:

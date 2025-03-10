@@ -115,7 +115,7 @@ class ExtractJsonReferenceAction(Action):
 
         #referenced_json = json.loads(json.dumps(referenced_json))
         #Uncomment this line to read from csv
-        return referenced_json
+        #return referenced_json
         return json.dumps(referenced_json, indent=4)
 
     def summary(json_schema,referenced_json):
