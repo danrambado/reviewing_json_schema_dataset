@@ -106,7 +106,7 @@ class ExtractJsonReferenceAction(Action):
         return ExtractJsonReferenceAction.remove_properties_suffix(property_names)
 
     def remove_properties_suffix(strings):
-        return [s.replace('properties.', '').replace('if.','').replace('then.','').replace('else.','') for s in strings]
+        return [s.replace('properties.', '').replace('if.','').replace('then.','').replace('else.','').replace('oneOf.','').replace('allOf.','').replace('anyOf.','') for s in strings]
 
     # Clean adn load json
     def extract_json(referenced_json):
@@ -115,8 +115,10 @@ class ExtractJsonReferenceAction(Action):
 
         #referenced_json = json.loads(json.dumps(referenced_json))
         #Uncomment this line to read from csv
-        #return referenced_json
+        return referenced_json
         return json.dumps(referenced_json, indent=4)
+        # For long schemas
+        #return json.dumps(referenced_json)
 
     def summary(json_schema,referenced_json):
     # Example usage with the provided JSON schema

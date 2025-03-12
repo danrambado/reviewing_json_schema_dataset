@@ -23,8 +23,9 @@ class EvalPromptSubSchemaPieline(Pipeline):
                 'TASK_ID': 'TASK'})
 
         # keep the columns needed
-        df2 = df2[['TASK','languageCode', 'internal_id', 'prompt', 'schema','MR_EVAL_SUB_SCHEMA', 'REFERENCED_JSON', 'reference_JSON', 'summary','score_reference','schema_properties','missing_properties','referenced_false','accuracy']]
         df2['languageCode'] = 'en_US'
+        df2 = df2[['TASK','languageCode', 'internal_id', 'prompt', 'schema', 'reference_JSON', 'summary','score_reference', 'REFERENCED_JSON','schema_properties','missing_properties','referenced_false','accuracy']]
+        
         self.df=df2
 
     def format_eval(self):
@@ -46,8 +47,8 @@ class EvalPromptSubSchemaPieline(Pipeline):
         action.set_model(self.model)
         
         # Comment these lines for eval
-        self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
-        self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
+        #self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
+        #self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
 
         action= ExtractJsonReferenceAction()
 

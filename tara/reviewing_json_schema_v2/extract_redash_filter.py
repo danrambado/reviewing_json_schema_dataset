@@ -20,6 +20,8 @@ class ExtractRedashFilter(Pipeline):
             'REFERENCE_JSON': 'REFERENCED_JSON'
         })
 
+        self.console.log(f"Total filter rows: {len(self.df)}")
+
 
       
 
@@ -27,7 +29,7 @@ class ExtractRedashFilter(Pipeline):
         redash= Redash()
         redash.folder = self.folder
         redash.file_name= self.csv_file_redash
-        redash.query_id = "210389"
+        redash.query_id = "214831"
         redash.process()
 
         self.read_csv()
