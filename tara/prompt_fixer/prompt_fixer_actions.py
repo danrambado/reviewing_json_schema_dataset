@@ -6,17 +6,20 @@ class PromptFixer(Action):
     
     def prompt_fixer(self,row) -> str:
         final_prompt=f"""
-Fix the provided <PROMPT> to ensure that contain the missing reference.
-Add the missing refence in a natural way with the existing prompt. Don not add the reference in a forced way or unnaturally. 
-Make sure is coherent with the existing prompt.
+
+Fix the provided  <ORIGINAL_PROMPT> by making the smallest possible changes to include a MISSING_REFERENCE.
+Additionally:
+- The changes should be minimal—only adding what's necessary.
+- The new reference should fit smoothly without making the prompt sound unnatural.
+- When describing changes, refer to property names in natural language instead of explicitly mentioning them.
 
 <MISSING_REFERENCE>
 {row['JUSTIFICATION_PROP']}
 </MISSING_REFERENCE>
 
-<PROMPT>
+<ORIGINAL_PROMPT>
 {row['prompt']}
-</PROMPT>
+</ORIGINAL_PROMPT>
 
 Your output must follow this structure:
 <FIXED_PROMPT>The fixed prompt here</FIXED_PROMPT>

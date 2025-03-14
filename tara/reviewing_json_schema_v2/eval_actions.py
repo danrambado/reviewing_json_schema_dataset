@@ -44,6 +44,7 @@ class EvalAction(Action):
 #                                "type": "string"
 #                            },
 # ...
+        if row['prompt']==None: return []
         try:
             schema_dict = json.loads(row['schema'])  # Convert string to JSON object
         

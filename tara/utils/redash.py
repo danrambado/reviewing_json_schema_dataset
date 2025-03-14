@@ -52,10 +52,12 @@ class Redash(Pipeline):
 
         while True:
             # Set parameters for current batch
-            params = {
-                'limit': str(config['batch_size']),
-                'offset': str(current_offset),
-            }
+            params = self.params
+
+            # Include this parameters in the query to use batches
+            #params['limit']=str(config['batch_size'])
+            #params['offset']=str(current_offset)
+            
 
             print(f"\nFetching batch {batch_number} (offset: {current_offset})...")
             
@@ -176,5 +178,6 @@ if __name__ == '__main__':
     pipeline= Redash()
     pipeline.folder = os.path.join(sys.argv[1])
     pipeline.file_name= os.path.join(sys.argv[1],'00_seed_all_task.csv')
-    pipeline.query_id = os.path.join(sys.argv[2])#"198554"
+    pipeline.query_id = os.path.join(sys.argv[2])#"210389"
+    pipeline.params={"project_id":"67b7fd86f75fa8e311b1c1dc","review_level":"-1"}
     pipeline.process()    

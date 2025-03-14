@@ -29,17 +29,22 @@ class EvalPromptSubSchemaPieline(Pipeline):
         self.df=df2
 
     def format_eval(self):
-        df2=self.df
-
-        # keep the columns needed
-        df2 = df2[['TASK_ID','summary','score_reference','priority']]
-        self.df=df2
+        self.df = self.df.rename(columns={
+            'prompt':'FIXED_PROMPT'
+        })
+        
 
     def process(self):
         # Orchestrates the pipeline by reading the input CSV file, executing the actions in parallel,
         self.console.log("Starting script...")
         self.read_csv()
-        self.filter_row()
+        #self.filter_row()
+        # Rename columns
+        
+        self.df = self.df.rename(columns={
+            'SCHEMA': 'schema',
+            'FIXED_PROMPT': 'prompt'
+        })
 
         #First action
         action = EvalAction()
@@ -47,8 +52,8 @@ class EvalPromptSubSchemaPieline(Pipeline):
         action.set_model(self.model)
         
         # Comment these lines for eval
-        #self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
-        #self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
+        self.execute_action(action.eval_sub_schema,'MR_EVAL_SUB_SCHEMA')
+        self.execute_action(action.extract_eval_sub_schema,'REFERENCED_JSON')
 
         action= ExtractJsonReferenceAction()
 
@@ -69,37 +74,39 @@ class EvalPromptSubSchemaPieline(Pipeline):
         # - 3 if 1<df['score_reference']>=0.6
 
         self.df['priority'] = self.df['score_reference'].apply(lambda x: 1 if x == 1 else (2 if x < 0.6 else 3))
+        # update priority =4 where accuracy < 0.9
+        self.df.loc[self.df['accuracy'] < 0.9, 'priority'] = 4
 
-        # Filter accuracy > 0.9
+
+
         #self.df=self.df[self.df['accuracy']>0.9]
-        #self.format_eval()
+        self.format_eval()
 
-        self.format_output()
+        #self.format_output()
         # Save the results to a new csv
         self.save_csv()
-if len(sys.argv) != 5:
-        print("Usage: uv run -m tara.reviewing_json_schema_v2.eval_prompt_sub_schema_pipeline  <folder> <model> <init_row> <end_row>")
-        sys.exit(1)
-folder = sys.argv[1]
-logging.basicConfig(filename=os.path.join(folder,'app.log'), level=logging.INFO, 
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+
 if __name__ == '__main__':
     # Check if the correct number of arguments is provided
 
     # Access the parameters
     pipeline= EvalPromptSubSchemaPieline()
-    pipeline.csv_file_input = os.path.join(sys.argv[1], '00_seed.csv')
+    pipeline.csv_file_input = os.path.join(sys.argv[1], '01_eval_PII.csv')
     # pipeline.csv_file_output = os.path.join(sys.argv[1], 'analysis.csv')
-    pipeline.csv_file_output = os.path.join(sys.argv[1], '01_output.csv')
+    pipeline.csv_file_output = os.path.join(sys.argv[1], '02_eval_prompt.csv')
     pipeline.model = sys.argv[2]
     pipeline.init_row_number = sys.argv[3]
     pipeline.end_row_number = sys.argv[4]
 
     pipeline.process()
 
-    sheet_id="1W8ZTYjzonvHQs54TcxvdKQE_hau65Mf_nef3iegwfPA"
+    #sheet_id="1W8ZTYjzonvHQs54TcxvdKQE_hau65Mf_nef3iegwfPA"
     # Extract the last folder name 
-    last_folder = sys.argv[1].rstrip('/').split('/')[-1]
+
+    #sheet_id="15SkMV6Frg-4eHuORPAP6Zim9PLxEM5YJzs4bbYZU_c0"
+    #sheet_name='L10_eval_fixed_prompt'
+    
+    #last_folder = sys.argv[1].rstrip('/').split('/')[-1]
     # Replace Result in Google sheet
-    sheet = googleSheet()
-    sheet.from_csv_to_sheet(pipeline.csv_file_output , sheet_id,last_folder)    
+    #sheet = googleSheet()
+    #sheet.from_csv_to_sheet(pipeline.csv_file_output , sheet_id,last_folder)    

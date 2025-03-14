@@ -6,20 +6,27 @@ class EvalPIIAction(Action):
         super().__init__()
 
     def eval_PII(self,row) -> str:
-        prompt=row['prompt']
+        ORIGINAL_PROMPT=row['prompt']
 
         final_prompt=f"""
 <REQUEST>
 Check for personally identifiable information (PII) in the PROMPT.
-Fake data are allowed. Valid examples of false data are contacts such as Anna Fields (anna.fields@email.fake, +15551234567) and Edward Money (edward.money@email.fake).
+
+We will consider PII as: 
+- Full Name (first & last name together)
+- Email Address (only if the domain is real)
+- Phone Number (only real numbers)
+- Home Address (street, city, postal code)
+- National ID Number (e.g., Social Security Number, Passport Number, Driver’s License)
+- Credit Card Number or Bank Account Number
 </REQUEST>
 
 <PROMPT>
-    {prompt}
+   {{ORIGINAL_PROMPT}}
 </PROMPT>
 
 Your output must follow this structure:
-<PROMPT_OK>True/False</PROMPT_OK>
+<PROMPT_INCLUDE_PII>Yes/No</PROMPT_INCLUDE_PII>
 <EXPLANATION>YOUR EXPLANATION HERE</EXPLANATION>   
 """
         return self.prompt(final_prompt)
